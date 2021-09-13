@@ -1,23 +1,33 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import BmiSharesTable from './components/bmiSharesTable'
+
+const BMI_SHARES_URL='https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=IBM&apikey=demo'
+
 
 function App() {
+
+  const [shares,setShares]=useState([]);
+
+  useEffect(()=>{
+
+    axios.get(BMI_SHARES_URL)
+    .then(res=>{
+      console.log(res.data["Time Series (Daily)"])
+      setShares(res.data["Time Series (Daily)"])
+      
+    })
+    .catch(err=>{
+      console.log(err);
+    })
+
+  },[])
+
+  
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <BmiSharesTable sharesData={shares}/>
     </div>
   );
 }

@@ -12,26 +12,74 @@ import SearchBar from "material-ui-search-bar";
 
 import { TableWrapper } from '../App.style'
 
+
 const BmiSharesTable=(props)=>{
 
     const { sharesData }= props;
+
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(20);
+
     const [rows, setRows] = useState([]);
     const [filterRows, setFilterRows] = useState([]);
+
     const [searched, setSearched] = useState("");
     const [orderBy, setOrderBy] = useState("date");
-    const [maxDay, setMaxDay] = useState({difference:0,date:null});
+
+    const [dateToBuy, setDateToBuy] = useState({close:0,date:null});
+    const [dateToSell, setDateToSell] = useState({close:0,date:null});
+
 
     const headCells =['date', 'open','high','low','close','difference']
 
 
     useEffect(()=>{
-        createData();
+        createData()
+        findMaxProfit();
     },[sharesData])
+
+    //function to find the best buy and sell dates.
+    const findMaxProfit=()=>{
+
+        let dateToBuyLocal={close:0,date:null};
+        let dateToSellLocal={close:0,date:null};
+
+        let dateToBuyIdeal={close:0,date:null};
+        let dateToSellIdeal={close:0,date:null};
+
+        let maxDiff=0
+        let currentDiff;
+
+        //check all the optional buy dates.
+        for(let i=0;i<rows.length;i++){
+
+            dateToBuyLocal=rows[i];
+            currentDiff =0;
+
+            for(let j=0;j<rows.length;j++){
+
+                //find the best sell date for the current buy date, with the max diff.
+                if(dateToBuyLocal.date < rows[j].date && (rows[j].close - dateToBuyLocal.close)>currentDiff ){
+                    dateToSellLocal=rows[j];
+                    currentDiff=rows[j].close - dateToBuyLocal.close;
+                }
+            }
+
+            //find the maximal diff among all the dates
+            if(currentDiff > maxDiff){
+                maxDiff=currentDiff;
+                dateToBuyIdeal=dateToBuyLocal;
+                dateToSellIdeal=dateToSellLocal;
+            }
+
+        }
+        setDateToSell(dateToSellIdeal);
+        setDateToBuy(dateToBuyIdeal);
+    }
 
 
     const requestSearch = (searchedVal) => {
+
         const filteredRows = rows.filter((row) => {
           return row.date.toLowerCase().includes(searchedVal.toLowerCase());
         });
@@ -39,8 +87,8 @@ const BmiSharesTable=(props)=>{
     };
     
     const cancelSearch = () => {
-    setSearched("");
-    requestSearch(searched);
+        setSearched("");
+        requestSearch(searched);
     };
 
     const handleChangePage = (event, newPage) => {
@@ -54,29 +102,26 @@ const BmiSharesTable=(props)=>{
     
     
     const createData=()=>{
-        for(let record in sharesData){
-            let row={
-                date:record,
-                open:sharesData[record]["1. open"],
-                high:sharesData[record]["2. high"],
-                low:sharesData[record]["3. low"],
-                close:sharesData[record]["4. close"],
-                difference:(parseFloat(sharesData[record]["1. open"])-parseFloat(sharesData[record]["4. close"])).toFixed(2)
-            }
-            setRows(rows=>[...rows,row])
-            setFilterRows(rows=>[...rows,row])
 
-            if(row.difference>maxDay.difference){
-                setMaxDay(row)
-            }
-        }
+            for(let record in sharesData){
+                let row={
+                    date:record,
+                    open:sharesData[record]["1. open"],
+                    high:sharesData[record]["2. high"],
+                    low:sharesData[record]["3. low"],
+                    close:sharesData[record]["4. close"],
+                    difference:(parseFloat(sharesData[record]["1. open"])-parseFloat(sharesData[record]["4. close"])).toFixed(2)
+                }
+                
+                setFilterRows(rows=>[...rows,row])
+                setRows(rows=>[...rows,row]).then(data=>{
+                    
+                })
+                
+            }    
+
     }
-    
-    
-    // const checkMaxDay=()=>{
-    //     console.log(rows.map(date=>date.difference));
-        
-    // }
+
 
     const sortBy=(key)=>{
         setOrderBy(key)
@@ -144,9 +189,11 @@ const BmiSharesTable=(props)=>{
                     onRowsPerPageChange={handleChangeRowsPerPage}
                 />
 
-                <b>Maximum profit day: {maxDay.date}</b>
+                <b>Date to buy: {dateToBuy.date} , Close price:{dateToBuy.close}</b>
                 <br/>
-                <b>Maximum profit: {maxDay.difference}</b>
+                <b>Date to sell: {dateToSell.date} , Close price:{dateToSell.close}</b>
+                <br/>
+                <b>Profit from the sale: {dateToSell.close-dateToBuy.close}</b>
 
         </TableWrapper>
     );
